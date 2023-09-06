@@ -46,6 +46,9 @@ public class ContactService {
         int sizeOfPrimaryContacts = primaryContacts.size();
         int sizeOfuniqueLinkedIds = uniqueLinkedIds.size();
         
+        List<String> allSecondaryEmails = getAllEmails(null, secondaryContacts);
+		List<String> allSecondaryPhoneNumbers = getAllPhoneNumbers(null, secondaryContacts);
+        
 		
 		if(email==null) {
 			if(sizeOfPrimaryContacts>0) return primaryContacts.get(0);
@@ -54,6 +57,21 @@ public class ContactService {
 		if(phoneNumber==null) {
 			if(sizeOfPrimaryContacts>0) return primaryContacts.get(0);
 			else return contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+		}
+		
+		if(sizeOfPrimaryContacts==0) {
+        	
+        	
+        	if(sizeOfuniqueLinkedIds==1) {
+        		
+        		if(allSecondaryEmails.contains(email) && allSecondaryPhoneNumbers.contains(phoneNumber)) {
+        			return contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+        		}
+        		else {
+        			addSecondaryContact(email, phoneNumber, uniqueLinkedIds.get(0));
+        			return contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+        		}
+        	}
 		}
 		if(sizeOfPrimaryContacts==1){
         	
