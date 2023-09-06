@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,6 +29,47 @@ public class ContactService {
         
         if(existingContacts.isEmpty()) return addPrimaryContact(email, phoneNumber);
         
+        List<Contact> primaryContacts = existingContacts.stream()
+                .filter(contact -> contact.getLinkPrecedence() == Contact.LinkPrecedence.PRIMARY)
+                .collect(Collectors.toList());
+
+        List<Contact> secondaryContacts = existingContacts.stream()
+                .filter(contact -> contact.getLinkPrecedence() == Contact.LinkPrecedence.SECONDARY)
+                .collect(Collectors.toList());
+        
+        List<Integer> uniqueLinkedIds = secondaryContacts.stream()
+        	    .map(Contact::getLinkedId) 
+        	    .distinct()  
+        	    .collect(Collectors.toList()); 
+
+        
+        int sizeOfPrimaryContacts = primaryContacts.size();
+        int sizeOfuniqueLinkedIds = uniqueLinkedIds.size();
+        
+		
+		if(email==null) {
+			if(sizeOfPrimaryContacts>0) return primaryContacts.get(0);
+			else return contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+		}
+		if(phoneNumber==null) {
+			if(sizeOfPrimaryContacts>0) return primaryContacts.get(0);
+			else return contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+		}
+		if(sizeOfPrimaryContacts==1){
+        	
+        	
+        	if(sizeOfuniqueLinkedIds==0) {
+        		if(!(primaryContacts.get(0).getEmail().equals(email) && primaryContacts.get(0).getPhoneNumber().equals(phoneNumber))) {
+            		addSecondaryContact(email, phoneNumber, primaryContacts.get(0).getId());
+            		return primaryContacts.get(0);
+            	}
+            	else {
+            		primaryContacts.get(0).setUpdatedAt(LocalDateTime.now());
+            		return contactRepository.save(primaryContacts.get(0));
+            	}
+        	}
+		}
+        
         return new Contact();
 	}
         
@@ -42,6 +82,16 @@ public class ContactService {
             newContact.setPhoneNumber(phoneNumber);
             newContact.setLinkPrecedence(Contact.LinkPrecedence.PRIMARY);
             newContact.setLinkedId(null);
+            newContact.setCreatedAt(LocalDateTime.now());
+            return contactRepository.save(newContact);
+        }
+        
+        public Contact addSecondaryContact(String email, String phoneNumber, Integer linkedId) {
+        	Contact newContact = new Contact();
+            newContact.setEmail(email);
+            newContact.setPhoneNumber(phoneNumber);
+            newContact.setLinkPrecedence(Contact.LinkPrecedence.SECONDARY);
+            newContact.setLinkedId(linkedId);
             newContact.setCreatedAt(LocalDateTime.now());
             return contactRepository.save(newContact);
         }
