@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -72,6 +73,18 @@ public class ContactService {
         			return contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
         		}
         	}
+        	else if(sizeOfuniqueLinkedIds==2) {
+        		Contact primaryContact1 = contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+        		Contact primaryContact2 = contactRepository.findById(uniqueLinkedIds.get(1)).orElse(null);
+        		if(compareCreatedTime(primaryContact1, primaryContact2)<0) {
+        			changeSecondaryContactsLinkedId(primaryContact1, primaryContact2);
+        			return primaryContact1;
+        		}
+        		else {
+        			changeSecondaryContactsLinkedId(primaryContact2, primaryContact1);
+        			return primaryContact2;
+        		}
+        	}
         	
 		}
 			if(sizeOfPrimaryContacts==1){
@@ -87,9 +100,79 @@ public class ContactService {
 	            		return contactRepository.save(primaryContacts.get(0));
 	            	}
 	        	}
+	        	else if(sizeOfuniqueLinkedIds==1) {
+	        		
+	        		if(uniqueLinkedIds.get(0)==primaryContacts.get(0).getId()) {
+	        			if((allSecondaryEmails.contains(email)||primaryContacts.get(0).getEmail()==email) && (allSecondaryPhoneNumbers.contains(phoneNumber)||primaryContacts.get(0).getPhoneNumber()==phoneNumber)) {
+	            			return primaryContacts.get(0);
+	            		}
+	            		else {
+	            			addSecondaryContact(email, phoneNumber, uniqueLinkedIds.get(0));
+	            			return primaryContacts.get(0);
+	            		}
+	        		}
+	        		else {
+	        			Contact primaryContact1 = primaryContacts.get(0);
+	        			Contact primaryContact2 = contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+	        			
+	        			if(compareCreatedTime(primaryContact1, primaryContact2)<0) {
+		        			changeSecondaryContactsLinkedId(primaryContact1, primaryContact2);
+		        			return primaryContact1;
+		        		}
+		        		else {
+		        			changeSecondaryContactsLinkedId(primaryContact2, primaryContact1);
+		        			return primaryContact2;
+		        		}
+	        			
+ 	        		}
+	        	}
+	        	
+	        	if(sizeOfuniqueLinkedIds==2) {
+	        		if(uniqueLinkedIds.get(0)!=primaryContacts.get(0).getId()) {
+	        			Contact primaryContact1 = primaryContacts.get(0);
+	        			Contact primaryContact2 = contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
+	        			
+	        			if(compareCreatedTime(primaryContact1, primaryContact2)<0) {
+		        			changeSecondaryContactsLinkedId(primaryContact1, primaryContact2);
+		        			return primaryContact1;
+		        		}
+		        		else {
+		        			changeSecondaryContactsLinkedId(primaryContact2, primaryContact1);
+		        			return primaryContact2;
+		        		}
+	        			
+	        		}
+	        		else if(uniqueLinkedIds.get(1)!=primaryContacts.get(0).getId()) {
+	        			Contact primaryContact1 = primaryContacts.get(0);
+	        			Contact primaryContact2 = contactRepository.findById(uniqueLinkedIds.get(1)).orElse(null);
+	        			
+	        			if(compareCreatedTime(primaryContact1, primaryContact2)<0) {
+		        			changeSecondaryContactsLinkedId(primaryContact1, primaryContact2);
+		        			return primaryContact1;
+		        		}
+		        		else {
+		        			changeSecondaryContactsLinkedId(primaryContact2, primaryContact1);
+		        			return primaryContact2;
+		        		}
+	        		}
+	        	}
 			}
-	        
-	        return new Contact();
+			if(sizeOfPrimaryContacts==2) {
+	        	Contact primaryContact1 = primaryContacts.get(0);
+				Contact primaryContact2 = primaryContacts.get(1);
+				
+				if(compareCreatedTime(primaryContact1, primaryContact2)<0) {
+	    			changeSecondaryContactsLinkedId(primaryContact1, primaryContact2);
+	    			return primaryContact1;
+	    		}
+	    		else {
+	    			changeSecondaryContactsLinkedId(primaryContact2, primaryContact1);
+	    			return primaryContact2;
+	    		}
+	        }
+			
+			
+	        return null;
 		}
         
 	
@@ -154,10 +237,19 @@ public class ContactService {
                 "phoneNumbers", getAllPhoneNumbers(primaryContact, secondaryContacts),
                 "secondaryContactIds", secondaryContactIds
         ));
+        Map<String, Object> contactMap = (Map<String, Object>) response.get("contact");
         
-        
+        Map<String, Object> rearrangedResponse = new LinkedHashMap<>();
+        rearrangedResponse.put("primaryContactId", contactMap.get("primaryContactId"));
+        rearrangedResponse.put("emails", contactMap.get("emails"));
+        rearrangedResponse.put("phoneNumbers", contactMap.get("phoneNumbers"));
+        rearrangedResponse.put("secondaryContactIds", contactMap.get("secondaryContactIds"));
 
-        return response;
+        Map<String, Object> finalResponse = new HashMap<>();
+        finalResponse.put("contact", rearrangedResponse);
+
+        return finalResponse;
+
     }
 	
 	private List<String> getAllEmails(Contact primaryContact, List<Contact> secondaryContacts) {
