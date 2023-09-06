@@ -72,27 +72,45 @@ public class ContactService {
         			return contactRepository.findById(uniqueLinkedIds.get(0)).orElse(null);
         		}
         	}
-		}
-		if(sizeOfPrimaryContacts==1){
         	
-        	
-        	if(sizeOfuniqueLinkedIds==0) {
-        		if(!(primaryContacts.get(0).getEmail().equals(email) && primaryContacts.get(0).getPhoneNumber().equals(phoneNumber))) {
-            		addSecondaryContact(email, phoneNumber, primaryContacts.get(0).getId());
-            		return primaryContacts.get(0);
-            	}
-            	else {
-            		primaryContacts.get(0).setUpdatedAt(LocalDateTime.now());
-            		return contactRepository.save(primaryContacts.get(0));
-            	}
-        	}
+		}
+			if(sizeOfPrimaryContacts==1){
+	        	
+	        	
+	        	if(sizeOfuniqueLinkedIds==0) {
+	        		if(!(primaryContacts.get(0).getEmail().equals(email) && primaryContacts.get(0).getPhoneNumber().equals(phoneNumber))) {
+	            		addSecondaryContact(email, phoneNumber, primaryContacts.get(0).getId());
+	            		return primaryContacts.get(0);
+	            	}
+	            	else {
+	            		primaryContacts.get(0).setUpdatedAt(LocalDateTime.now());
+	            		return contactRepository.save(primaryContacts.get(0));
+	            	}
+	        	}
+			}
+	        
+	        return new Contact();
 		}
         
-        return new Contact();
-	}
+	
+		public int compareCreatedTime(Contact contact1, Contact contact2) {
+	    	LocalDateTime timestamp1 = contact1.getCreatedAt();
+	    	LocalDateTime timestamp2 = contact2.getCreatedAt();
+	    	
+	    	return timestamp1.compareTo(timestamp2);
+	    }
         
-        
-        
+		public void changeSecondaryContactsLinkedId(Contact contact1, Contact contact2) {
+	    	List<Contact> allContact2LinkedContacts= contactRepository.findContactsByLinkedId(contact2.getId());
+	    	for(Contact contact : allContact2LinkedContacts) {
+	    		contact.setLinkedId(contact1.getId());
+	    	}
+	    	contactRepository.saveAll(allContact2LinkedContacts);
+	    	contact2.setLinkedId(contact1.getId());
+	    	contact2.setLinkPrecedence(Contact.LinkPrecedence.SECONDARY);
+	    	contact2.setUpdatedAt(LocalDateTime.now());
+	    	contactRepository.save(contact2);
+		}
         
         public Contact addPrimaryContact(String email, String phoneNumber) {
         	Contact newContact = new Contact();
