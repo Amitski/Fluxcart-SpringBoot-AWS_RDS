@@ -35,6 +35,7 @@ Example Request:
   "email": "mcfly@hillvalley.edu",
   "phoneNumber": "123456"
 }
+
 Example Response:
 
 ```json
